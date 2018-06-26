@@ -1,0 +1,30 @@
+---
+#Reproducible Research: Peer Assessment 1#
+
+=============================================================================================================
+Load the libraries
+```{r libraries, echo=TRUE}
+library(ggplot2)
+library(dplyr)
+```
+
+Load, read and transform the data
+```{r readingdata, echo=TRUE}
+setwd("//cib.net/shareparis/Home13/silvaol/PRIVE/COURSERA/Data Science R/Reproducible Research")
+activity=read.csv("activity.csv")
+activity$date <- as.POSIXlt(activity$date)
+```
+
+**What is mean total number of steps taken per day?**
+
+1. Calculate the total number of steps taken per day
+
+```{r steps, echo=TRUE}
+stepsbyday <- group_by(activity,date)
+summarize(stepsbyday,mean(steps,na.rm = TRUE))
+```
+
+2. Make a histogram of the total number of steps taken each day
+```{r hist, echo=TRUE}
+hist <- ggplot(data=stepsbyday) + geom_histogram()
+print(hist)
