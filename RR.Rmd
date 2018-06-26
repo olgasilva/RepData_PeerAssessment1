@@ -1,0 +1,111 @@
+---
+#Reproducible Research: Peer Assessment 1#
+
+=============================================================================================================
+Load the libraries
+```{r libraries, echo=TRUE}
+library("ggplot2")
+library("dplyr")
+```
+
+Load, read and transform the data
+```{r readingdata, echo=TRUE}
+setwd("//cib.net/shareparis/Home13/silvaol/PRIVE/COURSERA/Data Science R/Reproducible Research")
+activity=read.csv("activity.csv")
+```
+
+**What is mean total number of steps taken per day?**
+
+1. Calculate the total number of steps taken per day
+
+```{r steps, echo=TRUE}
+stepsbyday <- group_by(activity,date)
+msteps<-summarize(stepsbyday,sum(steps,na.rm = TRUE))
+names(msteps)<-(c("date","sum_steps"))
+```
+
+2. Make a histogram of the total number of steps taken each day
+```{r hist, echo=TRUE}
+ggplot(data=msteps, aes(msteps$sum_steps)) + geom_histogram(binwidth = 1500, col = "pink")+
+xlab("Number of Steps") +
+ylab("Count") +
+ggtitle("Histogram of the Total Number of Steps Taken Each Day")
+```
+
+3. Calculate and report the mean and median of the total number of steps taken per day
+```{r meanmedian, echo=TRUE}
+mean(msteps$sum_steps)
+median(msteps$sum_steps)
+```
+
+**What is the average daily activity pattern?**
+
+1. Make a time series plot of the 5-minute interval and the average number of steps taken, averaged across all days
+```{r ts_plot, echo=TRUE}
+five_min <- aggregate(steps ~ interval, data = activity, FUN =mean)
+plot(five_min, type = "l")
+```
+
+2. Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+```{r max_interval, echo=TRUE}
+five_min[which.max(five_min$steps),]
+```
+
+**Imputing missing values**
+
+1. Calculate and report the total number of missing values in the dataset
+```{r total_NA, echo=TRUE}
+apply(activity, 2, function(x) sum(is.na(x)))
+```
+
+2. Devise a strategy for filling in all of the missing values in the dataset.
+```{r fill_NA, echo=TRUE}
+
+replace_mean <- function(num) replace(num, is.na(num), mean(num, na.rm = TRUE))
+activity %>% group_by(interval) %>% mutate(steps = replace_mean(steps))
+
+```
+
+3. Create a new dataset that is equal to the original dataset but with the missing data filled in
+```{r new_data, echo=TRUE}
+new_data<-as.data.frame(activity %>% group_by(interval) %>% mutate(steps = replace_mean(steps)))
+```
+
+4. Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day
+
+```{r hist2, echo=TRUE}
+stepsbyday2 <- group_by(new_data,date)
+msteps2<-summarize(stepsbyday2,sum(steps))
+names(msteps2)<-(c("date","sum_steps2"))
+ggplot(data=msteps2, aes(msteps2$sum_steps2)) + geom_histogram(binwidth = 1500, col = "green")+
+xlab("Number of Steps") +
+ylab("Count") +
+ggtitle("Histogram of the Total Number of Steps Taken Each Day without NA")
+```
+
+```{r mean_median, echo=TRUE}
+new_mean<-mean(msteps2$sum_steps2)
+new_median<-median(msteps2$sum_steps2)
+old_mean<-mean(msteps$sum_steps)
+old_median<-median(msteps$sum_steps)
+```
+
+The first mean is `r old_mean`, the mean without NA is `r new_mean`
+The first median is `r old_median`, the median without NA is `r new_median`
+
+**Are there differences in activity patterns between weekdays and weekends?**
+
+1. Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+
+```{r week_day, echo=TRUE}
+new_data$day<-as.POSIXlt(new_data$date)$wday
+new_data$Weekday <-ifelse(new_data$day > 5, "weekend", "weekday")
+```
+
+2. Make a panel plot containing a time series plot of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). 
+
+```{r final_plot, echo=TRUE}
+five_min2 <- (new_data %>% group_by(interval, Weekday) %>% summarize(Mean = mean(steps)))
+ggplot(five_min2, aes(interval, Mean)) + geom_line() + facet_grid(Weekday ~ .)+ylab("Mean of Steps") +
+    ggtitle("Comparison of Average Number of Steps in Each Interval")
+```
